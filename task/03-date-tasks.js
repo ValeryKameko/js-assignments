@@ -22,7 +22,7 @@
  *    'Sun, 17 May 1998 03:00:00 GMT+01' => Date()
  */
 function parseDataFromRfc2822(value) {
-   throw new Error('Not implemented');
+    return new Date(value);
 }
 
 /**
@@ -37,7 +37,7 @@ function parseDataFromRfc2822(value) {
  *    '2016-01-19T08:07:37Z' => Date()
  */
 function parseDataFromIso8601(value) {
-   throw new Error('Not implemented');
+    return new Date(value);
 }
 
 
@@ -56,7 +56,14 @@ function parseDataFromIso8601(value) {
  *    Date(2015,1,1)    => false
  */
 function isLeapYear(date) {
-   throw new Error('Not implemented');
+    var year = date.getFullYear();
+    if (year % 400 == 0)
+        return true;
+    if (year % 100 == 0)
+        return false;
+    if (year % 4 == 0)
+        return true;
+    return false;
 }
 
 
@@ -76,7 +83,24 @@ function isLeapYear(date) {
  *    Date(2000,1,1,10,0,0),  Date(2000,1,1,15,20,10,453)   => "05:20:10.453"
  */
 function timeSpanToString(startDate, endDate) {
-   throw new Error('Not implemented');
+    var diffDate = new Date(endDate.getTime() - startDate.getTime());
+
+    var hoursString = diffDate.getUTCHours().toString();
+    if (hoursString.length < 2)
+        hoursString = "0" + hoursString;
+
+    var minutesString = diffDate.getUTCMinutes().toString();
+    if (minutesString.length < 2)
+        minutesString = "0" + minutesString;
+
+    var secondsString = diffDate.getUTCSeconds().toString();
+    if (secondsString.length < 2)
+        secondsString = "0" + secondsString;
+
+    var millisecondsString = diffDate.getUTCMilliseconds().toString();
+    while (millisecondsString.length < 3)
+        millisecondsString = "0" + millisecondsString;
+    return `${hoursString}:${minutesString}:${secondsString}.${millisecondsString}`;
 }
 
 
@@ -94,7 +118,12 @@ function timeSpanToString(startDate, endDate) {
  *    Date.UTC(2016,3,5,21, 0) => Math.PI/2
  */
 function angleBetweenClockHands(date) {
-    throw new Error('Not implemented');
+    var minutesPart = date.getUTCMinutes() * 12;
+    var hoursPart = (date.getUTCHours() % 12) * 60 + minutesPart / 12;
+    var diffPart = Math.abs(minutesPart - hoursPart);
+
+    diffPart = Math.min(diffPart, 12 * 60 - diffPart);
+    return diffPart * Math.PI * 2 / (12 * 60);
 }
 
 
