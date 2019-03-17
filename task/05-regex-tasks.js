@@ -120,7 +120,6 @@ function getRegexForSSN() {
  */
 function getPasswordValidator(minLength) {
     var passwordRegExp = `^(?=.\{${minLength}\}.*$)(?=.*[a-z].*$)(?=.*[A-Z].*$)(?=.*\\d.*$)[a-zA-Z0-9]*$`;
-    console.log(passwordRegExp);
     return new RegExp(passwordRegExp);
 }
 
