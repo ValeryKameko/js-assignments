@@ -23,7 +23,12 @@
  *    console.log(r.getArea());   // => 200
  */
 function Rectangle(width, height) {
-    throw new Error('Not implemented');
+    this.width = width;
+    this.height = height;
+}
+
+Rectangle.prototype.getArea = function() {
+    return this.width * this.height;
 }
 
 
@@ -38,7 +43,7 @@ function Rectangle(width, height) {
  *    { width: 10, height : 20 } => '{"height":10,"width":20}'
  */
 function getJSON(obj) {
-    throw new Error('Not implemented');
+    return JSON.stringify(obj);
 }
 
 
@@ -54,7 +59,7 @@ function getJSON(obj) {
  *
  */
 function fromJSON(proto, json) {
-    throw new Error('Not implemented');
+    return Object.assign(new proto.constructor(), JSON.parse(json));
 }
 
 
@@ -109,34 +114,170 @@ function fromJSON(proto, json) {
 const cssSelectorBuilder = {
 
     element: function(value) {
-        throw new Error('Not implemented');
+        return new SelectorBuilder(value).element(value);
     },
 
     id: function(value) {
-        throw new Error('Not implemented');
+        return new SelectorBuilder().id(value);
     },
 
     class: function(value) {
-        throw new Error('Not implemented');
+        return new SelectorBuilder().class(value);
     },
 
     attr: function(value) {
-        throw new Error('Not implemented');
+        return new SelectorBuilder().attr(value);
     },
 
     pseudoClass: function(value) {
-        throw new Error('Not implemented');
+        return new SelectorBuilder().pseudoClass(value);
     },
 
     pseudoElement: function(value) {
-        throw new Error('Not implemented');
+        return new SelectorBuilder().pseudoElement(value);
     },
 
     combine: function(selector1, combinator, selector2) {
-        throw new Error('Not implemented');
+        return selector1.chain(new Combinator(combinator), selector2);
     },
 };
 
+class Selector {
+    constructor() {
+        this.classes = [];
+        this.pseudoClasses = [];
+        this.attributes = [];
+        this.id = null;
+        this.element = null;
+        this.pseudoElement = null;
+    }
+
+    stringify() {
+        var result = '';
+        if (this.element)
+            result += `${this.element}`;
+        if (this.id)
+            result += `#${this.id}`;
+        for (let actualClass of this.classes)
+            result += `.${actualClass}`;
+        for (let attribute of this.attributes)
+            result += `[${attribute}]`;
+        for (let pseudoClass of this.pseudoClasses)
+            result += `:${pseudoClass}`;
+        if (this.pseudoElement)
+            result += `::${this.pseudoElement}`;
+        console.log(result);
+        return result;
+    }
+}
+
+class Combinator {
+    constructor(value) {
+        this.value = value;
+    }
+
+    stringify() {
+        return this.value;
+    }
+}
+
+const State = Object.freeze({
+    ELEMENT:        0,
+    ID:             1,
+    CLASS:          2,
+    ATTRIBUTE:      3,
+    PSEUDO_CLASS:   4,
+    PSEUDO_ELEMENT: 5,
+    INVALID:        6
+});
+
+class SelectorBuilder {
+    constructor() {
+        this.followChain = [];
+        this.currentSelector = null;
+        this.state = State.ELEMENT;
+    }
+    getCurrentSelector() {
+        if (!this.currentSelector)
+            this.currentSelector = new Selector();
+        return this.currentSelector;
+    }
+
+    element(value) {
+        if (this.getCurrentSelector().element)
+            throw new 'Element, id and pseudo-element should not occur more then one time inside the selector';
+        if (State.ELEMENT < this.state)
+            throw new "Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element";
+        this.getCurrentSelector().element = value;
+        console.log(this.stringify());
+        return this;
+    }
+
+    id(value) {
+        if (this.getCurrentSelector().id)
+            throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+        if (State.ID < this.state)
+            throw new Error("Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element");
+        this.state = State.ID;
+        this.getCurrentSelector().id = value;
+        console.log(this.stringify());
+        return this;
+    }
+
+    class(value) {
+        if (State.CLASS < this.state)
+            throw new Error("Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element");
+        this.getCurrentSelector().classes.push(value);
+        this.state = State.CLASS;
+        return this;
+    }
+
+    attr(value) {
+        if (State.ATTRIBUTE < this.state)
+            throw new Error("Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element");
+        this.getCurrentSelector().attributes.push(value);
+        this.state = State.ATTRIBUTE;
+        return this;
+    }
+    
+    pseudoElement(value) {
+        if (this.getCurrentSelector().pseudoElement)
+            throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+        if (State.PSEUDO_ELEMENT < this.state)
+            throw new Error("Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element");
+        this.state = State.PSEUDO_ELEMENT;
+        this.getCurrentSelector().pseudoElement = value;
+        return this;
+    }
+
+    pseudoClass(value) {
+        if (State.PSEUDO_CLASS < this.state)
+            throw new Error("Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element");
+        this.getCurrentSelector().pseudoClasses.push(value);
+        this.state = State.PSEUDO_CLASS;
+        return this;
+    }
+
+    chain(combinator, selector) {
+        if (this.currentSelector) {
+            this.followChain.push(this.currentSelector);
+            this.currentSelector = null;
+        }
+        this.followChain.push(combinator, ...selector.followChain);
+        if (selector.currentSelector)
+            this.followChain.push(selector.currentSelector);
+        this.state = State.INVALID;
+        return this;
+    }
+
+    stringify() {
+        var fullFollowChain = [...this.followChain];
+        if (this.currentSelector)
+            fullFollowChain.push(this.currentSelector);
+        
+        return fullFollowChain.map(e => e.stringify()).join(' ');
+    }
+}
 
 module.exports = {
     Rectangle: Rectangle,
