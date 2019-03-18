@@ -166,7 +166,6 @@ class Selector {
             result += `:${pseudoClass}`;
         if (this.pseudoElement)
             result += `::${this.pseudoElement}`;
-        console.log(result);
         return result;
     }
 }
@@ -209,7 +208,6 @@ class SelectorBuilder {
         if (State.ELEMENT < this.state)
             throw new "Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element";
         this.getCurrentSelector().element = value;
-        console.log(this.stringify());
         return this;
     }
 
@@ -220,7 +218,6 @@ class SelectorBuilder {
             throw new Error("Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element");
         this.state = State.ID;
         this.getCurrentSelector().id = value;
-        console.log(this.stringify());
         return this;
     }
 
