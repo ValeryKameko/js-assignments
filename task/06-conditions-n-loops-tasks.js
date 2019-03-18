@@ -225,10 +225,11 @@ function findFirstSingleChar(str) {
  */
 function getIntervalString(a, b, isStartIncluded, isEndIncluded) {
     var result = '';
-    if (a > b)
-        [a, b] = [b, a];
     result += isStartIncluded ? '[' : '(';
-    result += a.toString() + ', ' + b.toString();
+    if (a < b)
+        result += a.toString() + ', ' + b.toString();
+    else
+        result += b.toString() + ', ' + a.toString();
     result += isEndIncluded ? ']' : ')';
     return result;
 }
