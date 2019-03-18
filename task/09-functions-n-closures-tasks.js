@@ -179,7 +179,6 @@ function partialUsingArguments(fn) {
     var partialArgs = Array.from(arguments).slice(1);
     return function() {
         var returnValue = fn.apply(null, partialArgs.concat(Array.from(arguments)));
-        console.log(returnValue);
         return returnValue;
     };
 }
