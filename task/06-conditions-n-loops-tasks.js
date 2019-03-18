@@ -356,7 +356,7 @@ function isBracketsBalanced(str) {
     var openBrackets = ['(', '[', '{', '<'];
     var closeBrackets = [')', ']', '}', '>'];
     for (const c of str) {
-        if (openBrackets.includes(c)) {
+        if (openBrackets.indexOf(c) != -1) {
             stack.push(c);
             continue;
         }
