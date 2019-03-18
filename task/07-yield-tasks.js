@@ -33,7 +33,18 @@
  *
  */
 function* get99BottlesOfBeer() {
-    throw new Error('Not implemented');
+    var bottlesFormat = i => (
+        i > 1 ? `${i} bottles` :
+        i == 1 ? '1 bottle' :
+        'No more bottles'
+    );
+    for (var i = 99; i >= 0; i--) {
+        yield `${bottlesFormat(i)} of beer on the wall, ${bottlesFormat(i).toLowerCase()} of beer.`;
+        if (i == 0)
+            break;
+        yield `Take one down and pass it around, ${bottlesFormat(i - 1).toLowerCase()} of beer on the wall.`;
+    }
+    yield 'Go to the store and buy some more, 99 bottles of beer on the wall.';
 }
 
 
@@ -47,7 +58,14 @@ function* get99BottlesOfBeer() {
  *
  */
 function* getFibonacciSequence() {
-    throw new Error('Not implemented');
+    var current = 1, last = 0;
+    yield last;
+    while (true) {
+        yield current;
+        var temp = current;
+        current += last;
+        last = temp;
+    }
 }
 
 
@@ -82,7 +100,13 @@ function* getFibonacciSequence() {
  *
  */
 function* depthTraversalTree(root) {
-    throw new Error('Not implemented');
+    var stack = [root];
+    while (stack.length > 0) {
+        var node = stack.pop();
+        yield node;
+        if ('children' in node)
+            stack.push(...node.children.reverse());
+    }
 }
 
 
@@ -108,7 +132,13 @@ function* depthTraversalTree(root) {
  *
  */
 function* breadthTraversalTree(root) {
-    throw new Error('Not implemented');
+    var queue = [root];
+    while (queue.length > 0) {
+        var node = queue.pop();
+        yield node;
+        if ('children' in node)
+            queue.unshift(...node.children.reverse());
+    }
 }
 
 
@@ -126,7 +156,25 @@ function* breadthTraversalTree(root) {
  *   [ 1, 3, 5, ... ], [ -1 ] => [ -1, 1, 3, 5, ...]
  */
 function* mergeSortedSequences(source1, source2) {
-    throw new Error('Not implemented');
+    var it1 = source1();
+    var it2 = source2();
+    function nextValue(it) {
+        var itElement = it.next();
+        return it.done ? undefined : itElement.value;
+    }
+    var value1 = nextValue(it1);
+    var value2 = nextValue(it2);
+    while (value1 || value2) {
+        if (!value2 || value1 < value2) {
+            yield value1;
+            value1 = undefined;
+        } else {
+            yield value2;
+            value2 = undefined;
+        }
+        value1 = value1 || nextValue(it1);
+        value2 = value2 || nextValue(it2);
+    }
 }
 
 
