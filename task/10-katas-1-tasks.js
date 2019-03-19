@@ -17,8 +17,29 @@
  *  ]
  */
 function createCompassPoints() {
-    throw new Error('Not implemented');
     var sides = ['N','E','S','W'];  // use array of cardinal directions only!
+    var result = [];
+    for (var i = 0; i < 32; i++) {
+        var name;
+        var lastSide = sides[Math.floor(i / 8)];
+        var nextSide = sides[Math.floor(i / 8 + 1) % 4];
+        var nearestVerticalSide = sides[Math.round(i / 16) * 2 % 4];
+        var nearestHorizontalSide = sides[(Math.round(((i + 24) % 32) / 16) * 2 + 1) % 4];
+        var nearestSide = sides[Math.round(i / 8) % 4];
+        var farthestSide = sides[Math.round((i + 8 - 2 * (i % 8)) / 8) % 4];
+        if (i % 8 == 0)
+            name = `${lastSide}`;
+        else if (i % 8 == 1 || i % 8 == 7)
+                name = `${nearestSide}b${farthestSide}`;
+        else if (i % 8 == 2 || i % 8 == 6)
+                name = `${nearestSide}${nearestVerticalSide}${nearestHorizontalSide}`;
+        else if (i % 8 == 3 || i % 8 == 5)
+                name = `${nearestVerticalSide}${nearestHorizontalSide}b${nearestSide}`;
+        else if (i % 8 == 4)
+                name = `${nearestVerticalSide}${nearestHorizontalSide}`;
+        result.push({abbreviation: name, azimuth: 360 / 32 * i});
+    }
+    return result;
 }
 
 
@@ -56,7 +77,40 @@ function createCompassPoints() {
  *   'nothing to do' => 'nothing to do'
  */
 function* expandBraces(str) {
-    throw new Error('Not implemented');
+    var indexStart = str.indexOf('{');
+    if (indexStart === -1) {
+        yield str;
+        return;
+    }
+
+    var raw = str.slice(0, indexStart);
+    var variants = [];
+    var currentVariant = '';
+    var indexEnd = indexStart + 1;
+    var balance = 1;
+    while (balance > 1 || str[indexEnd] != '}') {
+        if (str[indexEnd] == '{')
+            balance++;
+        if (str[indexEnd] == '}')
+            balance--;
+        if (balance == 1 && str[indexEnd] == ',') {
+            variants.push(currentVariant);
+            currentVariant = '';
+        } else {
+            currentVariant += str[indexEnd];
+        }
+        indexEnd++;
+    }
+    variants.push(currentVariant);
+
+    var suffix = str.slice(indexEnd + 1);
+    for (var suffixExpansion of expandBraces(suffix)) {
+        for (var variant of variants) {
+            for (var expansion of expandBraces(variant)) {
+                yield `${raw}${expansion}${suffixExpansion}`;
+            }
+        }
+    }
 }
 
 
@@ -88,7 +142,25 @@ function* expandBraces(str) {
  *
  */
 function getZigZagMatrix(n) {
-    throw new Error('Not implemented');
+    var array = Array(n).fill().map(() => Array(n));
+    var idCounter = 0;
+    for (var diagonalIndex = 0; diagonalIndex < 2 * n - 1; diagonalIndex++) {
+        var startJ = Math.min(diagonalIndex, n - 1);
+        var startI = diagonalIndex - startJ;
+        var diagonalLength = Math.min(startJ + 1, n - startI);
+
+        var diagonal = Array(diagonalLength).fill().map(() => idCounter++);
+        if (diagonalIndex % 2 == 0)
+            diagonal = diagonal.reverse();
+        var i = startI;
+        var j = startJ;
+        for (var element of diagonal) {
+            array[i][j] = element;
+            i++;
+            j--;
+        }
+    }
+    return array;
 }
 
 
@@ -113,7 +185,36 @@ function getZigZagMatrix(n) {
  *
  */
 function canDominoesMakeRow(dominoes) {
-    throw new Error('Not implemented');
+    var adjacents = {};
+    for (var domino of dominoes) {
+        adjacents[domino[0]] = adjacents[domino[0]] || [];
+        adjacents[domino[0]].push(domino[1]);
+        adjacents[domino[1]] = adjacents[domino[1]] || [];
+        adjacents[domino[1]].push(domino[0]);
+    }
+    var used = {};
+    var queue = [];
+
+    queue.unshift(Object.keys(adjacents)[0]);
+    while (queue.length > 0) {
+        var node = queue.pop();
+        if (used[node])
+            continue;
+        for (var v of adjacents[node]) {
+            queue.unshift(v);
+        }
+        used[node] = true;
+    }
+    if (Object.keys(used).length != Object.keys(adjacents).length)
+        return false;
+
+    var oddCount = 0;
+    for (var key of Object.keys(adjacents)) {
+        var count = adjacents[key].length;
+        if (count % 2 == 1)
+            oddCount++;
+    }
+    return oddCount == 0 || oddCount == 2;
 }
 
 
@@ -137,7 +238,40 @@ function canDominoesMakeRow(dominoes) {
  * [ 1, 2, 4, 5]          => '1,2,4,5'
  */
 function extractRanges(nums) {
-    throw new Error('Not implemented');
+    var ranges = [];
+    var currentRange = undefined;
+    for (var num of nums) {
+        if (!currentRange || currentRange.right + 1 != num) {
+            if (currentRange) {
+                if (currentRange.left + 1 == currentRange.right) {
+                    ranges.push({ left: currentRange.left, right: currentRange.left });
+                    ranges.push({ left: currentRange.right, right: currentRange.right });
+                } else {
+                    ranges.push(currentRange);
+                }
+            }
+            currentRange = {
+                left: num,
+                right: num
+            };
+        } else {
+            currentRange.right = num;
+        }
+    }
+    if (currentRange) {
+        if (currentRange.left + 1 == currentRange.right) {
+            ranges.push({ left: currentRange.left, right: currentRange.left });
+            ranges.push({ left: currentRange.right, right: currentRange.right });
+        } else {
+            ranges.push(currentRange);
+        }
+    }
+    return ranges.map(range => {
+        if (range.left == range.right)
+            return `${range.left}`;
+        else
+            return `${range.left}-${range.right}`;
+    }).join(',');
 }
 
 module.exports = {
