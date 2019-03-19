@@ -34,7 +34,34 @@
  *
  */
 function parseBankAccount(bankAccount) {
-    throw new Error('Not implemented');
+    var digits = [
+        ' _     _  _     _  _  _  _  _ ',
+        '| |  | _| _||_||_ |_   ||_||_|',
+        '|_|  ||_  _|  | _||_|  ||_| _|'
+    ];
+    var digitWidth = 3;
+    var digitHeight = 3;
+    var lines = bankAccount.split('\n');
+    
+    var result = 0;
+
+    for (var i = 0; i < lines[0].length; i += digitWidth) {
+        result *= 10;
+        for (var j = 0; j < digits[0].length; j += digitWidth) {
+            var equal = true;
+            for (var di = 0; di < digitHeight && equal; di++) {
+                for (var dj = 0; dj < digitWidth && equal; dj++) {
+                    if (lines[di][i + dj] !== digits[di][j + dj])
+                        equal = false;
+                }
+            }
+            if (equal) {
+                result += j / digitWidth;
+                break;
+            }
+        }
+    }
+    return result;
 }
 
 
@@ -62,8 +89,55 @@ function parseBankAccount(bankAccount) {
  *                                                                                                'sequence of',
  *                                                                                                'characters.'
  */
+const TokenType = Object.freeze({
+    WHITESPACES: 0,
+    SEPARATOR: 1,
+    WORD: 2
+});
+
+function* tokenize(text) {
+    function classifyChar(c) {
+        if (c == ' ')
+            return TokenType.WHITESPACES;
+        if (c.match(/^[a-zA-Z]$/))
+            return TokenType.WORD;
+        return TokenType.SEPARATOR;
+    }
+
+    var currentToken = undefined;
+    for (var c of text) {
+        var charType = classifyChar(c);
+        if (!currentToken || currentToken.type === charType) {
+            if (!currentToken)
+                currentToken = {
+                    type: charType,
+                    value: ''
+                };
+            currentToken.value += c;
+            continue;
+        }
+        yield currentToken;
+        currentToken = {
+            type: charType,
+            value: c
+        };
+    }
+    if (currentToken)
+        yield currentToken;
+}
+
 function* wrapText(text, columns) {
-    throw new Error('Not implemented');
+    var rowLength = 0;
+    var row = '';
+    for (var token of tokenize(text)) {
+        if (row.length + token.value.length > columns) {
+            yield row.trim();
+            row = '';
+        }
+        if (row.length !== 0 || token.type !== TokenType.WHITESPACES)
+            row += token.value;
+    }
+    yield row.trim();
 }
 
 
@@ -99,8 +173,72 @@ const PokerRank = {
     HighCard: 0
 }
 
+const PokerNumerals = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+function parseCard(card) {
+    return {
+        numeral: card.slice(0, -1),
+        suit: card.slice(-1)
+    };
+}
+
 function getPokerHandRank(hand) {
-    throw new Error('Not implemented');
+    var cards = hand.map(parseCard).sort((a, b) => 
+        PokerNumerals.indexOf(a.numeral) - PokerNumerals.indexOf(b.numeral)
+    );
+    if (cards[cards.length - 1].numeral == 'A') {
+        if (cards[0].numeral == PokerNumerals[0]) {
+            var lastCard = cards.splice(-1, 1);
+            cards.splice(0, 0, ...lastCard);
+        }
+    }
+    var isSequential = cards.reduce((acc, e, i, arr) => {
+        if (!acc)
+            return false;
+        var lastIndex = 
+            arr[i - 1].numeral == 'A' ? 
+                -1 : 
+                PokerNumerals.indexOf(arr[i - 1].numeral);
+        var currIndex = PokerNumerals.indexOf(e.numeral);
+        return lastIndex + 1 == currIndex;
+    });
+
+
+    var numeralCount = cards.reduce((count, card) => {
+        if (count[card.numeral])
+            count[card.numeral]++;
+        else
+            count[card.numeral] = 1;
+        return count;
+    }, {});
+
+    var suitCount = cards.reduce((count, card) => {
+        if (count[card.suit])
+            count[card.suit]++;
+        else
+            count[card.suit] = 1;
+        return count;
+    }, {});
+
+    var numeralCountValues = Object.keys(numeralCount).map(key => numeralCount[key]);
+    var suitCountValues = Object.keys(suitCount).map(key => suitCount[key]);
+    if (suitCountValues.indexOf(5) !== -1 && isSequential)
+        return PokerRank.StraightFlush;
+    if (numeralCountValues.indexOf(4) !== -1)
+        return PokerRank.FourOfKind;
+    if (numeralCountValues.indexOf(3) !== -1 && numeralCountValues.indexOf(2) !== -1)
+        return PokerRank.FullHouse;
+    if (suitCountValues.length === 1)
+        return PokerRank.Flush;
+    if (isSequential)
+        return PokerRank.Straight;
+    if (numeralCountValues.indexOf(3) !== -1)
+        return PokerRank.ThreeOfKind;
+    if (numeralCountValues.filter(x => x == 2).length === 2)
+        return PokerRank.TwoPairs;
+    if (numeralCountValues.indexOf(2) !== -1)
+        return PokerRank.OnePair;
+    return PokerRank.HighCard;
 }
 
 
@@ -134,8 +272,46 @@ function getPokerHandRank(hand) {
  *    '|             |\n'+              '+-----+\n'           '+-------------+\n'
  *    '+-------------+\n'
  */
+function generateRectangle(width, height) {
+    return [
+        '+' + '-'.repeat(width - 2) + '+',
+        ...Array(height - 2).fill('|' + ' '.repeat(width - 2) + '|'),
+        '+' + '-'.repeat(width - 2) + '+'
+    ].join('\n') + '\n';
+}
+
 function* getFigureRectangles(figure) {
-   throw new Error('Not implemented');
+    var lines = figure.split('\n').slice(0, -1);
+    var height = lines.length;
+    var width = lines[0].length;
+    for (var i = 0; i < height - 1; i++) {
+        for (var j = 0; j < width - 1; j++) {
+            if (lines[i][j] !== '+')
+                continue;
+            if (lines[i + 1][j] === ' ' || lines[i][j + 1] === ' ')
+                continue;
+
+            var isBox = true;
+            var boxWidth = 1;
+            var boxHeight = 1;
+            for (var ii = i + 1; ii < height; ii++) {
+                boxHeight++;
+                if (['+-', '++'].indexOf(lines[ii][j] + lines[ii][j + 1]) !== -1)
+                    break;
+            }
+            if (ii == height)
+                isBox = false;
+            for (var jj = j + 1; jj < width; jj++) {
+                boxWidth++;
+                if (['+|', '++'].indexOf(lines[i][jj] + lines[i + 1][jj]) !== -1)
+                    break;
+            }
+            if (jj == width)
+                isBox = false;
+            if (isBox)
+                yield generateRectangle(boxWidth, boxHeight);
+        }
+    }
 }
 
 
