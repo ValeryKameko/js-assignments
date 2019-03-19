@@ -28,7 +28,40 @@
  *   'NULL'      => false 
  */
 function findStringInSnakingPuzzle(puzzle, searchStr) {
-    throw new Error('Not implemented');
+    var height = puzzle.length;
+    var width = puzzle[0].length;
+    var used = Array(height).fill().map(e => 
+        Array(width).fill(false)
+    );
+    function findString(searchStr, i, j) {
+        if (i < 0 || j < 0 || i >= height || j >= width || used[i][j])
+            return false;
+        if (searchStr.slice(-1) !== puzzle[i][j])
+            return false;
+        if (searchStr.length === 1)
+            return true;
+
+        used[i][j] = true;
+
+        for (var di of [-1, +1]) {
+            if (findString(searchStr.slice(0, -1), i + di, j))
+                return true;
+        }
+
+        for (var dj of [-1, +1]) {
+            if (findString(searchStr.slice(0, -1), i, j + dj))
+                return true;
+        }
+        used[i][j] = false;
+        return false;
+    }
+    for (var i = 0; i < height; i++) {
+        for (var j = 0; j < width; j++) {
+            if (findString(searchStr, i, j))
+                return true;
+        }
+    }
+    return false;
 }
 
 
@@ -45,7 +78,16 @@ function findStringInSnakingPuzzle(puzzle, searchStr) {
  *    'abc' => 'abc','acb','bac','bca','cab','cba'
  */
 function* getPermutations(chars) {
-    throw new Error('Not implemented');
+    if (chars.length == 1) {
+        yield chars;
+        return;
+    }
+    for (var i = 0; i < chars.length; i++) {
+        var right = chars.substring(0, i);
+        var left = chars.substring(i + 1);
+        for (var permutation of getPermutations(left + right)) 
+            yield chars[i] + permutation;
+    }
 }
 
 
@@ -65,7 +107,29 @@ function* getPermutations(chars) {
  *    [ 1, 6, 5, 10, 8, 7 ] => 18  (buy at 1,6,5 and sell all at 10)
  */
 function getMostProfitFromStockQuotes(quotes) {
-    throw new Error('Not implemented');
+    var sellQuote = undefined;
+    var buyQuotes = [];
+    var result = 0;
+    for (var quote of quotes.reverse()) {
+        if (!sellQuote) {
+            buyQuotes = [];
+            sellQuote = quote;
+            continue;
+        }
+        if (sellQuote < quote) {
+            for (var buyQuote of buyQuotes)
+                result += sellQuote - buyQuote;
+            buyQuotes = [];
+            sellQuote = quote;
+            continue;
+        }
+        buyQuotes.push(quote);
+    }
+    if (sellQuote) {
+        for (var buyQuote of buyQuotes)
+            result += sellQuote - buyQuote;
+    }
+    return result;
 }
 
 
@@ -87,16 +151,37 @@ function UrlShortener() {
     this.urlAllowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"+
                            "abcdefghijklmnopqrstuvwxyz"+
                            "0123456789-_.~!*'();:@&=+$,/?#[]";
+    this.shortURLChars= 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'+
+                        'abcdefghijklmnopqrstuvwxyz'+
+                        '0123456789'
 }
 
 UrlShortener.prototype = {
 
     encode: function(url) {
-        throw new Error('Not implemented');
+        var result = '';
+        var charPairs = url.match(/..?/g);
+
+        for (var pair of charPairs) {
+            var code = pair.charCodeAt(0);
+            if (pair.length == 2)
+                code += (pair.charCodeAt(1)) << 8;
+            result += String.fromCharCode(code);
+        }
+        return result;
     },
     
     decode: function(code) {
-        throw new Error('Not implemented');
+        var result = '';
+        for (var c of code) {
+            var charCode = c.charCodeAt(0);
+            if (charCode < 256) {
+                result += String.fromCharCode(charCode);
+            } else {
+                result += String.fromCharCode(charCode % (1 << 8), charCode >> 8);
+            }
+        }
+        return result;
     } 
 }
 
